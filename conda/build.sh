@@ -1,65 +1,55 @@
-# export SRC_DIR=~/git/esp-beta
-# export ESP_ROOT=${SRC_DIR}
-# echo "ESP_ROOT = ${ESP_ROOT}"
 
-# # assumes opencascade conda package installed in conda env ESP
-# ${ESP_ROOT}/config/makeEnv ~/anaconda3/envs/ESP
-# do a wget here for the ESP122
+# platform specific environment variables
+if [[ $(uname) == Darwin ]]; then
+    export SO_EXT="dylib"
+    export ENV_FILE_EXT="csh"
+elif [[ "$target_platform" == linux-* ]]; then
+    export SO_EXT="so"
+    export ENV_FILE_EXT="sh"
+fi
 
-# # source and build ESP/CAPS
-# source ${ESP_ROOT}/ESPenv.sh
-# export ESP_ROOT=${SRC_DIR}
-# echo "ESP_ROOT = ${ESP_ROOT}"
-# cd ${ESP_ROOT}/src && make
+# set main ESP environment variable
+export ESP_ROOT=${SRC_DIR}/EngSketchPad
+echo "ESP_ROOT = ${ESP_ROOT}"
+cd ${ESP_ROOT}
 
-# export TACS_DIR=${SRC_DIR}
+echo "Setting up ESP environment and linking with OpenCASCADE"
+# predefine environment variables so that the ESPenv.sh script doesn't break later
+export CASROOT=${SRC_DIR}/OpenCASCADE-7.6.0
+export CASARCH=
+export ESPARCH=
+export AFLR=
+export PATH=$PATH:$CASROOT/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CASROOT/lib
 
-# if [[ $(uname) == Darwin ]]; then
-#   export SO_EXT="dylib"
-#   export SO_LINK_FLAGS="-fPIC -dynamiclib"
-#   export LIB_SLF="${SO_LINK_FLAGS} -install_name @rpath/libtacs.dylib"
-#   export F5TOVTK_SLF="${SO_LINK_FLAGS} -install_name @rpath/f5tovtk"
-#   export LAPACK_LIBS="-framework accelerate"
-# elif [[ "$target_platform" == linux-* ]]; then
-#   export SO_EXT="so"
-#   export SO_LINK_FLAGS="-fPIC -shared"
-#   export LIB_SLF="${SO_LINK_FLAGS}"
-#   export F5TOVTK_SLF="${SO_LINK_FLAGS}"
-#   export LAPACK_LIBS="-L${PREFIX}/lib/ -llapack -lpthread -lblas"
-# fi
+# run the environment configure shell script
+./config/makeEnv ${CASROOT}
+source ${SRC_DIR}/ESPenv.${ENV_FILE_EXT}
+echo "Done setting up ESP environment"
 
-# if [[ $scalar == "complex" ]]; then
-#   export OPTIONAL="complex"
-#   export PIP_FLAGS="-DTACS_USE_COMPLEX"
-# elif [[ $scalar == "real" ]]; then
-#   export OPTIONAL="default"
-# fi
+# build the aim modules
+echo "Building AIM Module since rest is prebuilt"
+cd ${ESP_ROOT}/src/CAPS/aim/
+make
+cd ${SRC_DIR}
 
-# cp Makefile.in.info Makefile.in;
-# make ${OPTIONAL} TACS_DIR=${TACS_DIR} \
-#      LAPACK_LIBS="${LAPACK_LIBS}" \
-#      METIS_INCLUDE=-I${PREFIX}/include/ METIS_LIB="-L${PREFIX}/lib/ -lmetis" \
-#      SO_LINK_FLAGS="${LIB_SLF}" SO_EXT=${SO_EXT};
-# mv ${TACS_DIR}/lib/libtacs.${SO_EXT} ${PREFIX}/lib;
+# copy executables from EngSketchPad and OpenCASCADE/bin to anaconda bin
+mv $ESP_ROOT/bin/* ${PREFIX}/bin
+mv $CASROOT/bin/* ${PREFIX}/bin
 
-# # Recursively copy all header files
-# mkdir ${PREFIX}/include/tacs;
-# find ${TACS_DIR}/src/ -name '*.h' -exec cp -prv '{}' ${PREFIX}/include/tacs ';'
+# move .h files to bin
+# unfortunately can't put in esp-caps folder as python files have fixed cython refs inside
+mv $ESP_ROOT/include/ $PREFIX/include/
+find $ESP_ROOT/src/ -name '*.h' -exec cp -prv '{}' ${PREFIX}/include/ ';'
+# maybe it is bad to have too many files in main include/ ?
+mv $CASROOT/include/opencascade $PREFIX/include/
 
-# CFLAGS=${PIP_FLAGS} ${PYTHON} -m pip install --no-deps --prefix=${PREFIX} . -vv;
+# move .so files to lib
+mv $ESP_ROOT/lib/*.${SO_EXT}* ${PREFIX}/lib/
+mv $CASROOT/lib/*.${SO_EXT}* ${PREFIX}/lib/
 
-# cd ${TACS_DIR}/extern/f5tovtk;
-# make default TACS_DIR=${TACS_DIR} \
-#              LAPACK_LIBS="${LAPACK_LIBS}" \
-#              METIS_INCLUDE=-I${PREFIX}/include/ METIS_LIB="-L${PREFIX}/lib/ -lmetis" \
-#              SO_LINK_FLAGS="${F5TOVTK_SLF}" SO_EXT=${SO_EXT};
-# mv ./f5tovtk ${PREFIX}/bin;
+# move python files to site-packages
+mv $ESP_ROOT/pyESP/* ${SP_DIR}
 
-# cd ${TACS_DIR}/extern/f5totec;
-# make default TACS_DIR=${TACS_DIR} \
-#              TECIO_INCLUDE=${PREFIX}/include TECIO_LIB=${PREFIX}/lib/libtecio.a \
-#              LAPACK_LIBS="${LAPACK_LIBS}" \
-#              METIS_INCLUDE=-I${PREFIX}/include/ METIS_LIB="-L${PREFIX}/lib/ -lmetis" \
-#              SO_LINK_FLAGS="${F5TOVTK_SLF}" SO_EXT=${SO_EXT};
-# mv ./f5totec ${PREFIX}/bin;
-
+export ESP_ROOT=${PREFIX}
+echo "ESP_ROOT = ${PREFIX}"

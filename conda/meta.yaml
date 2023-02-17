@@ -1,45 +1,35 @@
-{% set name = "tacs" %}
+{% set name = "esp-caps" %}
 
-{% set version = environ.get('GIT_DESCRIBE_TAG', '') %}
-{% if version.startswith('v') %}
-{% set version = version[1:] %}
-{% endif %}
-
+{% set version = 1.22 %}
 {% set build = 0 %}
 
-{% set mpi = mpi or 'openmpi' %}
-{% if scalar == "real" %}
-{% set build = build + 100 %}
-{% endif %}
 
 package:
-  name: "tacs"
+  name: "esp-caps"
   version: "{{ version }}"
 
 source:
-  git_url: https://github.com/smdogroup/tacs.git
+  fn: ESP122Lin.tgz
+  url: https://acdl.mit.edu/ESP/PreBuilts/ESP122Lin.tgz
+  sha1: 82871a88a30c396776849657ea1805e28c8685dd
+  sha256: c55b1ad93c5521dd2a758c6e86cdfac356943d93898efa78d3a83473b5a01103
 
 build:
-  number: {{ build }}
+  number: 1
   skip: true  # [py<=36]
-  string: py{{ CONDA_PY }}_{{ scalar }}_h{{ PKG_HASH }}_{{ build }}
+  string: py{{ CONDA_PY }}_h{{ PKG_HASH }}_{{ build }}
   track_features:
-    - tacs_complex  # [scalar == "complex"]
 
 requirements:
   build:
     - python {{ python }}
+    - {{ compiler('cxx') }}
     - numpy   1.18   # [py==37]
     - numpy   1.18   # [py==38]
     - numpy   1.19   # [py==39]
     - numpy   1.22   # [py==310]
     - numpy   1.23   # [py==311]
-    - {{ mpi }}
-    - openmpi-mpicxx  # [mpi == "openmpi"]
-    - mpich-mpicxx  # [mpi == "mpich"]
-    - {{ compiler('cxx') }}
     - make
-    - mpi4py
     - cython
     - setuptools
 
@@ -51,64 +41,30 @@ requirements:
     - numpy   1.19   # [py==39]
     - numpy   1.22   # [py==310]
     - numpy   1.23   # [py==311]
-    - {{ mpi }}
-    - openmpi-mpicxx  # [mpi == "openmpi"]
-    - mpich-mpicxx  # [mpi == "mpich"]
-    - libopenblas
-    - lapack
-    - metis >=5.1
-    - tecio
-    - mpi4py
     - cython
     - setuptools
-
   run:
     - python
-    - numpy >=1.18.5,<2.0.a0   # [py==37]
-    - numpy >=1.18.5,<2.0.a0   # [py==38]
-    - numpy >=1.19.5,<2.0.a0   # [py==39]
-    - numpy >=1.22.0,<2.0.a0   # [py==310]
-    - numpy >=1.23.0,<2.0.a0   # [py==311]
-    - scipy
-    - {{ mpi }}
-    - openmpi-mpicxx  # [mpi == "openmpi"]
-    - mpich-mpicxx  # [mpi == "mpich"]
-    - libopenblas
-    - lapack
-    - metis >=5.1
-    - mpi4py
-    - pynastran
+    - numpy   1.18   # [py==37]
+    - numpy   1.18   # [py==38]
+    - numpy   1.19   # [py==39]
+    - numpy   1.22   # [py==310]
+    - numpy   1.23   # [py==311]
 
 test:
-  requires:
-    - testflo
-
-  source_files:
-    - tests
+  commands:
+  # need to set ESP_ROOT since python files use this to find .h, .so, etc.
+    - export ESP_ROOT=${PREFIX}
+    - echo "Set ESP_ROOT to ${ESP_ROOT}"
 
   imports:
-    - tacs
-    - tacs.pytacs
-    - tacs.problems
-    - tacs.TACS
-    - tacs.elements
-    - tacs.functions
-    - tacs.constitutive
-    #- tacs.mphys # Needs OpenMDAO/MPHYS conda packages
-
-  commands:
-    - |
-
-    - test -f $PREFIX/bin/f5tovtk
-    - test -f $PREFIX/bin/f5totec
-    - export OMPI_MCA_btl=self,tcp
-    - export OMPI_MCA_rmaps_base_oversubscribe=1
-    - rm tests/integration_tests/test_mphys*
-    - testflo --pre_announce --timeout 120 tests/ # [linux64]
+    - pyCAPS
+    - pyEGADS
+    - pyOCSM
 
 about:
-  home: https://github.com/smdogroup/tacs
-  license: Apache
-  license_family: APACHE
-  summary: Parallel finite-element analysis package
-  doc_url: https://smdogroup.github.io/tacs/
+  home: https://github.com/sean-engelstad/esp-caps
+  license: GNU
+  license_family: GPL2
+  summary: Parametric CAD Geometry tool
+  doc_url: https://acdl.mit.edu/ESP/
