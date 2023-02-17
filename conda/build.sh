@@ -48,8 +48,9 @@ mv $CASROOT/include/opencascade $PREFIX/include/
 mv $ESP_ROOT/lib/*.${SO_EXT}* ${PREFIX}/lib/
 mv $CASROOT/lib/*.${SO_EXT}* ${PREFIX}/lib/
 
+# recursively change python files to use CONDA_PREFIX not ESP_ROOT
+# this way pyCAPS, pyEGADS files etc know where the header files are
+find ./ -type f -exec sed -i -e 's/"ESP_ROOT"/"CONDA_PREFIX"/g' {} \;
+
 # move python files to site-packages
 mv $ESP_ROOT/pyESP/* ${SP_DIR}
-
-export ESP_ROOT=${PREFIX}
-echo "ESP_ROOT = ${PREFIX}"

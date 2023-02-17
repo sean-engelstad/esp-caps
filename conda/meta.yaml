@@ -52,11 +52,6 @@ requirements:
     - numpy   1.23   # [py==311]
 
 test:
-  commands:
-  # need to set ESP_ROOT since python files use this to find .h, .so, etc.
-    - export ESP_ROOT=${PREFIX}
-    - echo "Set ESP_ROOT to ${ESP_ROOT}"
-
   imports:
     - pyCAPS
     - pyEGADS
