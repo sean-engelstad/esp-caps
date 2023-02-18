@@ -5,6 +5,9 @@ if [[ $(uname) == Darwin ]]; then
 elif [[ "$target_platform" == linux-* ]]; then
     export SO_EXT="so"
     export ENV_FILE_EXT="sh"
+    # source intel compiler for ESP/CAPS otherwise udpNaca456 doesn't compile
+    # this might have trouble working on other computers...
+    source ~/intel/oneapi/setvars.sh > /dev/null
 fi
 
 # set main ESP environment variable
@@ -27,7 +30,7 @@ source ${SRC_DIR}/ESPenv.${ENV_FILE_EXT}
 echo "Done setting up ESP environment"
 echo "ESP_ROOT = ${ESP_ROOT}"
 
-declare modify_c=false
+declare modify_c=true
 if [ $modify_c = true ]; then
     #change ESP_ROOT to CONDA_PREFIX in .c files so they work at runtime for anaconda
     find ./ -type f -name "*.c" -exec sed -i -e 's/ESP_ROOT/CONDA_PREFIX/g' {} \;
@@ -52,7 +55,7 @@ mv $ESP_ROOT/include/* $PREFIX/include/
 find $ESP_ROOT/src/ -name '*.h' -exec cp -prv '{}' ${PREFIX}/include/ ';'
 mv $CASROOT/include/opencascade/* $PREFIX/include/
 
-# copy udunits2.xml file over
+# copy udunits2.xml file over and other xmls
 find $ESP_ROOT/src/ -name '*.xml' -exec cp -prv '{}' ${PREFIX}/include/ ';'
 
 # move .so files to lib
