@@ -1,4 +1,3 @@
-
 # platform specific environment variables
 if [[ $(uname) == Darwin ]]; then
     export SO_EXT="dylib"
@@ -26,27 +25,44 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CASROOT/lib
 ./config/makeEnv ${CASROOT}
 source ${SRC_DIR}/ESPenv.${ENV_FILE_EXT}
 echo "Done setting up ESP environment"
+echo "ESP_ROOT = ${ESP_ROOT}"
 
-# build the aim modules
+declare modify_c=false
+if [ $modify_c = true ]; then
+    #change ESP_ROOT to CONDA_PREFIX in .c files so they work at runtime for anaconda
+    find ./ -type f -name "*.c" -exec sed -i -e 's/ESP_ROOT/CONDA_PREFIX/g' {} \;
+
+    #remake parts of ESP/CAPS and make part that isn't rebuilt
+    echo "Remaking modified .c files"
+    cd ${ESP_ROOT}/src/CAPS
+    make
+    cd ${ESP_ROOT}/src/OpenCSM
+    make
+fi
+
 echo "Building AIM Module since rest is prebuilt"
-cd ${ESP_ROOT}/src/CAPS/aim/
+cd ${ESP_ROOT}/src/CAPS/aim
 make
 cd ${SRC_DIR}
 
-# copy executables from EngSketchPad and OpenCASCADE/bin to anaconda bin
-mv $ESP_ROOT/bin/* ${PREFIX}/bin
-mv $CASROOT/bin/* ${PREFIX}/bin
-
+echo "Moving FILES..."
 # move .h files to bin
 # unfortunately can't put in esp-caps folder as python files have fixed cython refs inside
-mv $ESP_ROOT/include/ $PREFIX/include/
+mv $ESP_ROOT/include/* $PREFIX/include/
 find $ESP_ROOT/src/ -name '*.h' -exec cp -prv '{}' ${PREFIX}/include/ ';'
-# maybe it is bad to have too many files in main include/ ?
-mv $CASROOT/include/opencascade $PREFIX/include/
+mv $CASROOT/include/opencascade/* $PREFIX/include/
+
+# copy udunits2.xml file over
+find $ESP_ROOT/src/ -name '*.xml' -exec cp -prv '{}' ${PREFIX}/include/ ';'
 
 # move .so files to lib
 mv $ESP_ROOT/lib/*.${SO_EXT}* ${PREFIX}/lib/
 mv $CASROOT/lib/*.${SO_EXT}* ${PREFIX}/lib/
+echo "Done moving files!"
+
+# copy executables from EngSketchPad and OpenCASCADE/bin to anaconda bin
+mv $ESP_ROOT/bin/* ${PREFIX}/bin
+mv $CASROOT/bin/* ${PREFIX}/bin
 
 # recursively change python files to use CONDA_PREFIX not ESP_ROOT
 # this way pyCAPS, pyEGADS files etc know where the header files are
