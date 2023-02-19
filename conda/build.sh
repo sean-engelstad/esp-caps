@@ -6,7 +6,7 @@ elif [[ "$target_platform" == linux-* ]]; then
     export SO_EXT="so"
     export ENV_FILE_EXT="sh"
     # source intel compiler for ESP/CAPS otherwise udpNaca456 doesn't compile
-    # this might have trouble working on other computers...
+    # this may not work on other computers...
     source ~/intel/oneapi/setvars.sh > /dev/null
 fi
 
@@ -56,6 +56,7 @@ find $ESP_ROOT/src/ -name '*.h' -exec cp -prv '{}' ${PREFIX}/include/ ';'
 mv $CASROOT/include/opencascade/* $PREFIX/include/
 
 # copy udunits2.xml file over and other xmls
+# this may bug if the udunits has fixed path in c
 find $ESP_ROOT/src/ -name '*.xml' -exec cp -prv '{}' ${PREFIX}/include/ ';'
 
 # move .so files to lib
@@ -71,5 +72,7 @@ mv $CASROOT/bin/* ${PREFIX}/bin
 # this way pyCAPS, pyEGADS files etc know where the header files are
 find ./ -type f -exec sed -i -e 's/"ESP_ROOT"/"CONDA_PREFIX"/g' {} \;
 
-# move python files to site-packages
-mv $ESP_ROOT/pyESP/* ${SP_DIR}
+# move python files to site-packages except the test files
+mv $ESP_ROOT/pyESP/corsairlite ${SP_DIR}
+mv $ESP_ROOT/pyESP/py* ${SP_DIR}
+mv $ESP_ROOT/pyESP/* ${CONDA_PREFIX}/lib

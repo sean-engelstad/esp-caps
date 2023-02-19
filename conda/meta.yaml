@@ -52,10 +52,19 @@ requirements:
     - numpy   1.23   # [py==311]
 
 test:
+  requires:
+    - testflo
+
   imports:
     - pyCAPS
     - pyEGADS
     - pyOCSM
+
+  commands:
+    # run the testCAPS, testOCSM, etc. unittests
+    - |
+    - pwd
+    - testflo --pre_announce --timeout 120 EngSketchPad/pyESP/
 
 about:
   home: https://github.com/sean-engelstad/esp-caps
